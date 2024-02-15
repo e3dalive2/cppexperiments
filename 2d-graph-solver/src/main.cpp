@@ -7,6 +7,7 @@
 #include <string>
 #include <vector>
 #include <stack>
+#include <deque>
 
 constexpr auto kDataW = 8;
 constexpr auto kDataH = 4;
@@ -17,10 +18,16 @@ struct Pos
 	int y;
 };
 
-class CField
+class CAutoArray2D
 {
 public:
-	void set(const Pos& pos, int value)
+	void set(const Pos& pos, int value, int defVal = 0)
+	{
+		prepare(pos, defVal);
+		m_data[pos.y][pos.x] = value;
+	}
+
+	void prepare(const Pos& pos, int defVal = 0)
 	{
 		if (pos.y >= m_data.size())
 		{
@@ -29,10 +36,35 @@ public:
 		auto& slice = m_data[pos.y];
 		if (pos.x >= slice.size())
 		{
-			slice.resize(pos.x + 1);
+			slice.resize(pos.x + 1, defVal);
+			maxWidth = std::max(maxWidth, slice.size());
 		}
-		slice[pos.x] = value;
+	}
 
+	int get(const Pos& pos)
+	{
+		if (pos.y < 0 || pos.x < 0) return -1;
+
+		prepare(pos);
+		return m_data[pos.y][pos.x];
+	}
+
+	int read(const Pos& pos) const
+	{
+		if (pos.y < 0 || pos.x < 0) return -1;
+		if (pos.x >= getMaxWidth() || pos.y >= getMaxHeight()) return -1;
+		return m_data[pos.y][pos.x];
+	}
+
+
+	int getMaxWidth() const
+	{
+		return maxWidth;
+	}
+
+	int getMaxHeight() const
+	{
+		return m_data.size();
 	}
 
 	void print() const
@@ -43,19 +75,29 @@ public:
 			for (int w = 0; w < slice.size(); w++)
 			{
 				auto& pt = slice[w];
-				std::cout << std::to_string(pt) << " ";
+				std::cout << (pt == 0 ? " " : std::to_string(pt)) << " ";
 			}
 			std::cout << "\n";
 		}
 		std::cout << "\n";
 	}
 
-	int getData(const Pos& pos) const
+	std::vector< std::vector<int>> m_data;
+	size_t maxWidth = 0;
+};
+
+class CField
+{
+public:
+
+	void set(const Pos& pos, int value)
 	{
-		if (pos.y<0 || pos.y>m_data.size()) return -1;
-		auto& slice = m_data[pos.y];
-		if (pos.x<0 || pos.x>slice.size()) return -1;
-		return slice[pos.x];
+		m_vec2d.set(pos, value);
+	}
+
+	void print() const
+	{
+		m_vec2d.print();
 	}
 
 	static bool isNearCave(const Pos& pos)
@@ -68,13 +110,79 @@ public:
 		return value == 0;
 	}
 
-	void findCaveBrute(const Pos& pos) const
+	bool findCaveBrute(const Pos& startPos)
 	{
-		std::stack<Pos> todo;
+		std::deque<Pos> todo;
+
+		CAutoArray2D m_visited;
+
+		todo.push_back(startPos);
+
+		CAutoArray2D m_path;
+
+		bool found = false;
+
+		while (!todo.empty())
+		{
+			auto& cur = todo.front();
+			todo.pop_front();
+
+			if (m_visited.get(cur) == 1)
+			{
+				//std::cout << "been in " << cur.x << "/" << cur.y << "\n";
+				continue;//ignore visited
+			}
+
+			auto value = m_vec2d.read(cur);
+			if (value == -1) continue;
+			std::cout << "visiting " << cur.x << "/" << cur.y << " = " << value << "\n";
+
+			m_visited.set(cur, 1);
+
+			if (!isWalkable(value)) continue;//can't walk here
+
+			if (isNearCave(cur))
+			{
+				m_path.set(cur, 3);
+				found = true;
+				break;//finished
+			}
+
+			auto curSz = todo.size();
+
+			m_path.set(cur, 2);
+
+			if (cur.x > 0)
+			{
+				todo.push_back({ cur.x - 1,cur.y });//left
+			}
+
+			if (cur.x < m_vec2d.getMaxWidth())
+			{
+				todo.push_back({ cur.x + 1,cur.y });//right
+			}
+
+			if (cur.y < m_vec2d.getMaxHeight())
+			{
+				todo.push_back({ cur.x,cur.y + 1 });//bottom
+			}
+
+
+			if (cur.y > 0)
+			{
+				todo.push_back({ cur.x,cur.y - 1 });//top
+			}
+
+			//std::cout << "added " << todo.size() - curSz << "\n";
+		}
+
+
+		m_path.print();
+		return found;
 	}
 
 protected:
-	std::vector< std::vector<int>> m_data;
+	CAutoArray2D m_vec2d;
 };
 
 int data[kDataH][kDataW]{
@@ -96,7 +204,7 @@ void main()
 		}
 	}
 	field.print();
-	//printField();
+	field.findCaveBrute({ 0,0 });
 
 
 }

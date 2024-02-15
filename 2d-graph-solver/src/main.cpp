@@ -9,8 +9,6 @@
 #include <stack>
 #include <deque>
 
-constexpr auto kDataW = 8;
-constexpr auto kDataH = 4;
 
 struct Pos
 {
@@ -18,6 +16,7 @@ struct Pos
 	int y;
 };
 
+// This is simple automatically sized array which grows to accumulate needs for memory
 class CAutoArray2D
 {
 public:
@@ -75,11 +74,17 @@ public:
 			for (int w = 0; w < slice.size(); w++)
 			{
 				auto& pt = slice[w];
-				std::cout << (pt == 0 ? " " : std::to_string(pt)) << " ";
+				std::cout << (/*pt == 0 ? " " : */std::to_string(pt)) << " ";
 			}
 			std::cout << "\n";
 		}
 		std::cout << "\n";
+	}
+
+	void load(const CAutoArray2D& other)
+	{
+		m_data = other.m_data;
+		maxWidth = other.maxWidth;
 	}
 
 	std::vector< std::vector<int>> m_data;
@@ -100,9 +105,9 @@ public:
 		m_vec2d.print();
 	}
 
-	static bool isNearCave(const Pos& pos)
+	bool isNearCave(const Pos& pos)
 	{
-		return pos.x == kDataW - 1;
+		return pos.x == m_vec2d.getMaxWidth() - 1;
 	}
 
 	static bool isWalkable(int value)
@@ -119,6 +124,7 @@ public:
 		todo.push_back(startPos);
 
 		CAutoArray2D m_path;
+		m_path.load(m_vec2d);//for viz load base data
 
 		bool found = false;
 
@@ -135,7 +141,7 @@ public:
 
 			auto value = m_vec2d.read(cur);
 			if (value == -1) continue;
-			std::cout << "visiting " << cur.x << "/" << cur.y << " = " << value << "\n";
+			//std::cout << "visiting " << cur.x << "/" << cur.y << " = " << value << "\n";
 
 			m_visited.set(cur, 1);
 
@@ -143,7 +149,7 @@ public:
 
 			if (isNearCave(cur))
 			{
-				m_path.set(cur, 3);
+				m_path.set(cur, 2);
 				found = true;
 				break;//finished
 			}
@@ -152,10 +158,7 @@ public:
 
 			m_path.set(cur, 2);
 
-			if (cur.x > 0)
-			{
-				todo.push_back({ cur.x - 1,cur.y });//left
-			}
+
 
 			if (cur.x < m_vec2d.getMaxWidth())
 			{
@@ -167,6 +170,10 @@ public:
 				todo.push_back({ cur.x,cur.y + 1 });//bottom
 			}
 
+			if (cur.x > 0)
+			{
+				todo.push_back({ cur.x - 1,cur.y });//left
+			}
 
 			if (cur.y > 0)
 			{
@@ -177,13 +184,22 @@ public:
 		}
 
 
-		m_path.print();
+		if (found)
+		{
+			m_path.print();
+		}
+
 		return found;
 	}
 
 protected:
 	CAutoArray2D m_vec2d;
 };
+
+//Simple data sets
+
+constexpr auto kDataW = 8;
+constexpr auto kDataH = 4;
 
 int data[kDataH][kDataW]{
 	{0, 0, 1, 1, 1, 0, 0, 0},
@@ -192,6 +208,19 @@ int data[kDataH][kDataW]{
 	{ 0, 0, 1, 1, 1, 1, 1, 0 }
 };
 
+int data2[kDataH][kDataW]{
+	{0, 1, 1, 1, 0, 1, 1, 0},
+	{ 0, 0, 1, 1, 0, 0, 0, 0 },
+	{ 0, 0, 0, 1, 0, 1, 0, 0 },
+	{ 0, 1, 1, 1, 1, 1, 1, 0 }
+};
+
+int data3[kDataH][kDataW]{
+	 {0, 1, 1, 1, 1, 1, 1, 1},
+	 {0, 0, 0, 0, 1, 0, 0, 1},
+	 {0, 0, 1, 0, 1, 0, 0, 0},
+	 {0, 1, 1, 0, 0, 0, 1, 0}
+};
 
 void main()
 {
@@ -200,7 +229,7 @@ void main()
 	{
 		for (int w = 0; w < kDataW; w++)
 		{
-			field.set({ w,h }, data[h][w]);
+			field.set({ w,h }, data3[h][w]);
 		}
 	}
 	field.print();

@@ -105,7 +105,7 @@ public:
 		m_vec2d.print();
 	}
 
-	bool isNearCave(const Pos& pos)
+	bool isNearCave(const Pos& pos) const
 	{
 		return pos.x == m_vec2d.getMaxWidth() - 1;
 	}
@@ -147,7 +147,7 @@ public:
 
 			if (!isWalkable(value)) continue;//can't walk here
 
-			if (isNearCave(cur))
+			if (isNearCave(cur)) // found the end
 			{
 				m_path.set(cur, 2);
 				found = true;
@@ -201,21 +201,23 @@ protected:
 constexpr auto kDataW = 8;
 constexpr auto kDataH = 4;
 
-int data[kDataH][kDataW]{
+using vec2d = std::vector<std::vector<int>>;
+
+vec2d data{
 	{0, 0, 1, 1, 1, 0, 0, 0},
 	{ 0, 0, 0, 0, 1, 0, 0, 0 },
 	{ 0, 0, 1, 0, 0, 0, 0, 0 },
 	{ 0, 0, 1, 1, 1, 1, 1, 0 }
 };
 
-int data2[kDataH][kDataW]{
+vec2d data2{
 	{0, 1, 1, 1, 0, 1, 1, 0},
 	{ 0, 0, 1, 1, 0, 0, 0, 0 },
 	{ 0, 0, 0, 1, 0, 1, 0, 0 },
 	{ 0, 1, 1, 1, 1, 1, 1, 0 }
 };
 
-int data3[kDataH][kDataW]{
+vec2d data3{
 	 {0, 1, 1, 1, 1, 1, 1, 1},
 	 {0, 0, 0, 0, 1, 0, 0, 1},
 	 {0, 0, 1, 0, 1, 0, 0, 0},

@@ -20,13 +20,19 @@ struct Pos
 	bool operator==(const Pos& o) const {
 		return x == o.x && y == o.y;
 	}
+
+	bool operator!=(const Pos& o) const {
+		return x != o.x || y != o.y;
+	}
+
+	friend Pos operator+(Pos a, const Pos& b) {
+		a.x += b.x;
+		a.y += b.y;
+		return a;
+	}
 };
 
-Pos operator+(Pos a, const Pos& b) {
-	a.x += b.x;
-	a.y += b.y;
-	return a;
-}
+
 
 // This is simple automatically sized array which grows to accumulate needs for memory
 class CAutoArray2D
@@ -36,6 +42,19 @@ public:
 	{
 		prepare(pos, defVal);
 		m_data[pos.y][pos.x] = value;
+	}
+
+	void fill(int value)
+	{
+		for (int h = 0; h < m_data.size(); h++)
+		{
+			auto& slice = m_data[h];
+			for (int w = 0; w < slice.size(); w++)
+			{
+				auto& pt = slice[w];
+				pt = value;
+			}
+		}
 	}
 
 	void prepare(const Pos& pos, int defVal = 0)
@@ -52,11 +71,11 @@ public:
 		}
 	}
 
-	int get(const Pos& pos)
+	int get(const Pos& pos, int defVal = 0)
 	{
 		if (pos.y < 0 || pos.x < 0) return -1;
 
-		prepare(pos);
+		prepare(pos, defVal);
 		return m_data[pos.y][pos.x];
 	}
 
@@ -141,11 +160,20 @@ public:
 		return value == 0;
 	}
 
+	bool isWalkable(const Pos& pos)
+	{
+		auto value = m_vec2d.read(pos);
+		if (value == -1) return false;
+		return isWalkable(value);
+	}
+
 	bool findCaveBrute(const Pos& startPos)
 	{
 		std::deque<Pos> todo;
 
-		CAutoArray2D m_visited;
+		Pos targetPos = { -1,-1 };
+
+		CAutoArray2D visited;
 
 		todo.push_back(startPos);
 
@@ -156,39 +184,40 @@ public:
 
 		std::vector<Pos> directions = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} }; // Up, Down, Left, Right
 
+		std::vector<std::vector<Pos>> prev(m_vec2d.getMaxHeight(), std::vector<Pos>(m_vec2d.getMaxWidth(), { -1, -1 }));
+
+		CAutoArray2D distances;
+		distances.load(m_vec2d);
+		distances.fill(-1);
+		distances.set(startPos, 0);
 
 		while (!todo.empty())
 		{
 			auto& cur = todo.front();
 			todo.pop_front();
 
-			if (m_visited.get(cur) == 1)
+			if (visited.get(cur) == 1)
 			{
 				//std::cout << "been in " << cur.x << "/" << cur.y << "\n";
 				continue;//ignore visited
 			}
 
-			auto value = m_vec2d.read(cur);
-			if (value == -1) continue;
-			//std::cout << "visiting " << cur.x << "/" << cur.y << " = " << value << "\n";
+			if (!isWalkable(cur)) continue;//can't walk here
 
-			m_visited.set(cur, 1);
-
-			if (!isWalkable(value)) continue;//can't walk here
+			visited.set(cur, 1);
 
 			if (isNearCave(cur)) // found the end
 			{
 				m_path.set(cur, 2);
+				targetPos = cur;
 				found = true;
+
 				break;//finished
 			}
-
-
 
 			auto curSz = todo.size();
 
 			m_path.set(cur, 2);
-
 
 			for (const auto& dir : directions) {
 				Pos newPos = cur + dir;
@@ -196,6 +225,17 @@ public:
 				Pos regionEnd{ m_vec2d.getMaxWidth() ,m_vec2d.getMaxHeight() };
 				if (newPos.x < 0 || newPos.y < 0) continue;//ignore out of bounds
 				if (newPos.x >= regionEnd.x || newPos.y >= regionEnd.y) continue;
+				if (!isWalkable(newPos)) continue;//ignore blocked
+
+				prev[newPos.y][newPos.x] = cur;
+
+				auto curDistance = distances.get(cur);
+				if (distances.get(newPos) == -1)
+				{
+					distances.set(newPos, curDistance + 1, 0);
+				}
+
+
 				todo.push_back(newPos);
 			}
 
@@ -205,7 +245,20 @@ public:
 
 		if (found)
 		{
-			m_path.print();
+			/*std::stack<Pos> path;
+			for (auto at = targetPos; at != Pos({ -1, -1 }); at = prev[at.x][at.y]) {
+				path.push(at);
+			}
+			while (!path.empty()) {
+				auto p = path.top();
+				path.pop();
+				std::cout << "(" << p.x << ", " << p.y << ")";
+				if (!path.empty()) std::cout << " -> ";
+			}
+			std::cout << std::endl;*/
+			distances.print();
+
+			//m_path.print();
 		}
 		else
 		{

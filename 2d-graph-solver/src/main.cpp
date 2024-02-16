@@ -9,6 +9,8 @@
 #include <stack>
 #include <deque>
 
+using Vec2d = std::vector<std::vector<int>>;
+
 
 struct Pos
 {
@@ -87,6 +89,16 @@ public:
 		maxWidth = other.maxWidth;
 	}
 
+	void load(const Vec2d& other)
+	{
+		m_data = other;
+		for (int h = 0; h < m_data.size(); h++)
+		{
+			auto& slice = m_data[h];
+			maxWidth = std::max(maxWidth, slice.size());
+		}
+	}
+
 	std::vector< std::vector<int>> m_data;
 	size_t maxWidth = 0;
 };
@@ -94,6 +106,10 @@ public:
 class CField
 {
 public:
+	CField(const Vec2d& other)
+	{
+		m_vec2d.load(other);
+	}
 
 	void set(const Pos& pos, int value)
 	{
@@ -188,6 +204,10 @@ public:
 		{
 			m_path.print();
 		}
+		else
+		{
+			std::cout << "path not found\n";
+		}
 
 		return found;
 	}
@@ -201,23 +221,21 @@ protected:
 constexpr auto kDataW = 8;
 constexpr auto kDataH = 4;
 
-using vec2d = std::vector<std::vector<int>>;
-
-vec2d data{
+Vec2d data{
 	{0, 0, 1, 1, 1, 0, 0, 0},
 	{ 0, 0, 0, 0, 1, 0, 0, 0 },
 	{ 0, 0, 1, 0, 0, 0, 0, 0 },
 	{ 0, 0, 1, 1, 1, 1, 1, 0 }
 };
 
-vec2d data2{
+Vec2d data2{
 	{0, 1, 1, 1, 0, 1, 1, 0},
 	{ 0, 0, 1, 1, 0, 0, 0, 0 },
 	{ 0, 0, 0, 1, 0, 1, 0, 0 },
 	{ 0, 1, 1, 1, 1, 1, 1, 0 }
 };
 
-vec2d data3{
+Vec2d data3{
 	 {0, 1, 1, 1, 1, 1, 1, 1},
 	 {0, 0, 0, 0, 1, 0, 0, 1},
 	 {0, 0, 1, 0, 1, 0, 0, 0},
@@ -226,16 +244,25 @@ vec2d data3{
 
 void main()
 {
-	CField field;
-	for (int h = 0; h < kDataH; h++)
 	{
-		for (int w = 0; w < kDataW; w++)
-		{
-			field.set({ w,h }, data3[h][w]);
-		}
+		CField field{ data };
+		field.print();
+		field.findCaveBrute({ 0,0 });
+		std::cout << std::endl;
 	}
-	field.print();
-	field.findCaveBrute({ 0,0 });
 
 
+	{
+		CField field{ data2 };
+		field.print();
+		field.findCaveBrute({ 0,0 });
+		std::cout << std::endl;
+	}
+
+	{
+		CField field{ data3 };
+		field.print();
+		field.findCaveBrute({ 0,0 });
+		std::cout << std::endl;
+	}
 }

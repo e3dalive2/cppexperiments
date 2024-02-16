@@ -16,7 +16,17 @@ struct Pos
 {
 	int x;
 	int y;
+
+	bool operator==(const Pos& o) const {
+		return x == o.x && y == o.y;
+	}
 };
+
+Pos operator+(Pos a, const Pos& b) {
+	a.x += b.x;
+	a.y += b.y;
+	return a;
+}
 
 // This is simple automatically sized array which grows to accumulate needs for memory
 class CAutoArray2D
@@ -144,6 +154,9 @@ public:
 
 		bool found = false;
 
+		std::vector<Pos> directions = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} }; // Up, Down, Left, Right
+
+
 		while (!todo.empty())
 		{
 			auto& cur = todo.front();
@@ -170,30 +183,20 @@ public:
 				break;//finished
 			}
 
+
+
 			auto curSz = todo.size();
 
 			m_path.set(cur, 2);
 
 
+			for (const auto& dir : directions) {
+				Pos newPos = cur + dir;
 
-			if (cur.x < m_vec2d.getMaxWidth())
-			{
-				todo.push_back({ cur.x + 1,cur.y });//right
-			}
-
-			if (cur.y < m_vec2d.getMaxHeight())
-			{
-				todo.push_back({ cur.x,cur.y + 1 });//bottom
-			}
-
-			if (cur.x > 0)
-			{
-				todo.push_back({ cur.x - 1,cur.y });//left
-			}
-
-			if (cur.y > 0)
-			{
-				todo.push_back({ cur.x,cur.y - 1 });//top
+				Pos regionEnd{ m_vec2d.getMaxWidth() ,m_vec2d.getMaxHeight() };
+				if (newPos.x < 0 || newPos.y < 0) continue;//ignore out of bounds
+				if (newPos.x >= regionEnd.x || newPos.y >= regionEnd.y) continue;
+				todo.push_back(newPos);
 			}
 
 			//std::cout << "added " << todo.size() - curSz << "\n";

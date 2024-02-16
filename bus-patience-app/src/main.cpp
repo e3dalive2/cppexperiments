@@ -11,14 +11,14 @@
 
 using IntVec = std::vector<int>;
 
-void solve_per_scenario(const int k, const IntVec& p, const int scen)
+int solve_per_scenario(const int peopleInLine, const IntVec& peopleTimes, const int scenario)
 {
 	int numThatFit = 0;
 	int count = 0;
-	for (size_t i = 0; i < p.size(); i++)
+	for (size_t i = 0; i < peopleTimes.size(); i++)
 	{
-		auto person = p[i];
-		if (person > scen)
+		auto person = peopleTimes[i];
+		if (person > scenario)
 		{
 			count++;
 
@@ -26,20 +26,21 @@ void solve_per_scenario(const int k, const IntVec& p, const int scen)
 		}
 	}
 
-	if (count < k) {
-		std::cout << "0 ";
+	if (count < peopleInLine) {
+		return 0;
 	}
 	else {
-		std::cout << numThatFit;
+		return numThatFit;
 	}
 }
 
-void solve_bus_problem(const int k, const IntVec& p, const IntVec& s)
+void solve_bus_problem(const int peopleInLine, const IntVec& peopleTimes, const IntVec& scenarios)
 {
-	for (auto scen : s)
+	for (auto scen : scenarios)
 	{
 		std::cout << "for scenario " << scen << " ";
-		solve_per_scenario(k, p, scen);
+		int id = solve_per_scenario(peopleInLine, peopleTimes, scen);
+		std::cout << id;
 		std::cout << "\n";
 	}
 }

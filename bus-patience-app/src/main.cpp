@@ -11,9 +11,37 @@
 
 using IntVec = std::vector<int>;
 
-void solve_bus_problem(int k, IntVec p, IntVec s)
+void solve_per_scenario(const int k, const IntVec& p, const int scen)
 {
+	int numThatFit = 0;
+	int count = 0;
+	for (size_t i = 0; i < p.size(); i++)
+	{
+		auto person = p[i];
+		if (person > scen)
+		{
+			count++;
 
+			numThatFit = i + 1;
+		}
+	}
+
+	if (count < k) {
+		std::cout << "0 ";
+	}
+	else {
+		std::cout << numThatFit;
+	}
+}
+
+void solve_bus_problem(const int k, const IntVec& p, const IntVec& s)
+{
+	for (auto scen : s)
+	{
+		std::cout << "for scenario " << scen << " ";
+		solve_per_scenario(k, p, scen);
+		std::cout << "\n";
+	}
 }
 
 void main()
@@ -25,6 +53,7 @@ void main()
 		solve_bus_problem(k, p, s);
 	}
 
+	std::cout << "\n";
 	{
 		auto k = 3;
 		IntVec p = { 1,4,4,3,1,2,6 };

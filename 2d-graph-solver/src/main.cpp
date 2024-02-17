@@ -105,7 +105,8 @@ public:
 			for (int w = 0; w < slice.size(); w++)
 			{
 				auto& pt = slice[w];
-				std::cout << (/*pt == 0 ? " " : */std::to_string(pt)) << " ";
+				if (pt < 0) std::cout << "  ";
+				else std::cout << (/*pt == 0 ? " " : */std::to_string(pt)) << " ";
 			}
 			std::cout << "\n";
 		}
@@ -167,6 +168,14 @@ public:
 		return isWalkable(value);
 	}
 
+	bool inBounds(const Pos& pos)
+	{
+		Pos regionEnd{ m_vec2d.getMaxWidth() ,m_vec2d.getMaxHeight() };
+		if (pos.x < 0 || pos.y < 0) return false;//ignore out of bounds
+		if (pos.x >= regionEnd.x || pos.y >= regionEnd.y) return false;
+		return true;
+	}
+
 	bool findCaveBrute(const Pos& startPos)
 	{
 		std::deque<Pos> todo;
@@ -183,8 +192,6 @@ public:
 		bool found = false;
 
 		std::vector<Pos> directions = { {0, -1}, {0, 1}, {-1, 0}, {1, 0} }; // Up, Down, Left, Right
-
-		std::vector<std::vector<Pos>> prev(m_vec2d.getMaxHeight(), std::vector<Pos>(m_vec2d.getMaxWidth(), { -1, -1 }));
 
 		CAutoArray2D distances;
 		distances.load(m_vec2d);
@@ -208,7 +215,7 @@ public:
 
 			if (isNearCave(cur)) // found the end
 			{
-				m_path.set(cur, 2);
+				//m_path.set(cur, 2);
 				targetPos = cur;
 				found = true;
 
@@ -217,17 +224,12 @@ public:
 
 			auto curSz = todo.size();
 
-			m_path.set(cur, 2);
+			//m_path.set(cur, 2);
 
 			for (const auto& dir : directions) {
 				Pos newPos = cur + dir;
 
-				Pos regionEnd{ m_vec2d.getMaxWidth() ,m_vec2d.getMaxHeight() };
-				if (newPos.x < 0 || newPos.y < 0) continue;//ignore out of bounds
-				if (newPos.x >= regionEnd.x || newPos.y >= regionEnd.y) continue;
-				if (!isWalkable(newPos)) continue;//ignore blocked
-
-				prev[newPos.y][newPos.x] = cur;
+				if (!inBounds(newPos) || !isWalkable(newPos)) continue;//ignore blocked
 
 				auto curDistance = distances.get(cur);
 				if (distances.get(newPos) == -1)
@@ -243,20 +245,33 @@ public:
 		}
 
 
-		if (found)
+		if (found) // now print the path if we have it
 		{
-			/*std::stack<Pos> path;
-			for (auto at = targetPos; at != Pos({ -1, -1 }); at = prev[at.x][at.y]) {
-				path.push(at);
+			std::stack<Pos> stack;
+			stack.push(targetPos);
+			while (!stack.empty())
+			{
+				auto cur = stack.top();
+				stack.pop();
+
+				int curDist = distances.get(cur);
+
+				m_path.set(cur, 2);
+
+				for (const auto& dir : directions) {
+					Pos newPos = cur + dir;
+
+					auto newDist = distances.get(newPos);
+					if (!inBounds(newPos) || newDist == -1) continue;//skip bad ones
+					if (newDist == curDist - 1) // we must only add those who is -1 lower then current dist
+					{
+						stack.push(newPos);
+					}
+				}
 			}
-			while (!path.empty()) {
-				auto p = path.top();
-				path.pop();
-				std::cout << "(" << p.x << ", " << p.y << ")";
-				if (!path.empty()) std::cout << " -> ";
-			}
-			std::cout << std::endl;*/
-			distances.print();
+
+			m_path.print();
+			//distances.print();
 
 			//m_path.print();
 		}
